@@ -1,0 +1,10 @@
+# Example rules
+[exclude_apps]
+chrome.exe
+spotify.exe
+whatsapp.exe
+signal.exe
+
+# [include_apps]
+# vscode.exe
+# notepad.exe

@@ -1,0 +1,25 @@
+roles:
+  coder:
+    description: Software developer focusing on coding and reviews
+    metrics_weights:
+      time_in_focus: 0.4
+      typing_words: 0.35
+      backspace_rate: 0.1
+      app_switches: 0.05
+      mouse_distance: 0.1
+  engineer:
+    description: General engineer role
+    metrics_weights:
+      time_in_focus: 0.35
+      typing_words: 0.25
+      backspace_rate: 0.15
+      app_switches: 0.15
+      mouse_distance: 0.1
+  hr:
+    description: HR role focusing on documentation and communication
+    metrics_weights:
+      time_in_focus: 0.3
+      typing_words: 0.4
+      backspace_rate: 0.1
+      app_switches: 0.1
+      mouse_distance: 0.1

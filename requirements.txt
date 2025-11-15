@@ -1,0 +1,9 @@
+pynput==1.7.7
+psutil==6.0.0
+pywin32==306
+PyYAML==6.0.2
+python-dotenv==1.0.1
+requests==2.32.3
+Flask==3.0.3
+PyPDF2==3.0.1
+python-docx==1.1.2
