@@ -5,8 +5,8 @@ from dataclasses import dataclass, field
 from typing import Optional, Dict, Any
 
 import psutil
-import win32gui  # type: ignore
-import win32process  # type: ignore
+import sys
+import subprocess
 from pynput import keyboard, mouse
 
 
@@ -52,6 +52,7 @@ class ActiveAppTracker:
         self._last_mouse_pos = None
         self._kb_listener = keyboard.Listener(on_press=self._on_key_press)
         self._ms_listener = mouse.Listener(on_move=self._on_mouse_move)
+        self._is_windows = sys.platform.startswith('win')
 
     def start(self):
         self._kb_listener.start()
@@ -74,15 +75,70 @@ class ActiveAppTracker:
             return out
 
     def _get_foreground_exe_and_title(self):
-        hwnd = win32gui.GetForegroundWindow()
-        title = win32gui.GetWindowText(hwnd) or ''
+        if self._is_windows:
+            try:
+                import win32gui  # type: ignore
+                import win32process  # type: ignore
+                hwnd = win32gui.GetForegroundWindow()
+                title = win32gui.GetWindowText(hwnd) or ''
+                try:
+                    _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                    proc = psutil.Process(pid)
+                    exe = proc.name() or ''
+                except Exception:
+                    exe = ''
+                return (exe.lower(), title)
+            except Exception:
+                return ('', '')
+        else:
+            return self._linux_active_window_exe_title()
+
+    def _linux_active_window_exe_title(self):
         try:
-            tid, pid = win32process.GetWindowThreadProcessId(hwnd)
-            proc = psutil.Process(pid)
-            exe = proc.name() or ''
-        except Exception:
+            proc = subprocess.run(
+                ['xprop', '-root', '_NET_ACTIVE_WINDOW'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                check=False,
+            )
+            line = proc.stdout.strip()
+            if not line:
+                return ('', '')
+            parts = line.split()
+            wid_hex = parts[-1] if parts else ''
+            if wid_hex in ('0x0', '0x0,', 'None') or not wid_hex.startswith('0x'):
+                return ('', '')
+            proc2 = subprocess.run(
+                ['xprop', '-id', wid_hex, '_NET_WM_PID', '_NET_WM_NAME'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                check=False,
+            )
+            pid = None
+            title = ''
+            for l in proc2.stdout.splitlines():
+                if l.startswith('_NET_WM_PID'):
+                    try:
+                        pid = int(l.split()[-1])
+                    except Exception:
+                        pid = None
+                elif l.startswith('_NET_WM_NAME') or l.startswith('WM_NAME'):
+                    s = l.split('=', 1)[-1].strip()
+                    if s.startswith('"') and s.endswith('"'):
+                        s = s[1:-1]
+                    title = s
             exe = ''
-        return exe.lower(), title
+            if pid:
+                try:
+                    p = psutil.Process(pid)
+                    exe = p.name() or ''
+                except Exception:
+                    exe = ''
+            return (exe.lower(), title)
+        except Exception:
+            return ('', '')
 
     def _rotate_session_if_needed(self, exe: str, title: str):
         now = time.time()

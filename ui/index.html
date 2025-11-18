@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Performance Meter UI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style> pre{white-space:pre-wrap} </style>
+  <script>
+    const base = 'http://127.0.0.1:8766'; // API base
+    async function call(method, path, body){
+      const url = base + path;
+      const opts = { method, headers: { } };
+      if(body!==undefined){ opts.headers['Content-Type']='application/json'; opts.body=JSON.stringify(body); }
+      const res = await fetch(url, opts);
+      const txt = await res.text(); try { return JSON.parse(txt);} catch{ return txt; }
+    }
+    async function onStatus(){ out(await call('GET','/status')); }
+    async function onStart(){
+      const role = document.getElementById('role').value || 'coder';
+      const rules = document.getElementById('rules').value || 'rules.txt';
+      const profiles = document.getElementById('profiles').value || 'profiles.yaml';
+      const data_dir = document.getElementById('data_dir').value || 'data';
+      const flush_sec = parseInt(document.getElementById('flush').value||'60');
+      out(await call('POST','/capture/start',{role, rules, profiles, data_dir, flush_sec}));
+    }
+    async function onFlush(){ out(await call('POST','/capture/flush')); }
+    async function onStop(){ out(await call('POST','/capture/stop')); }
+    async function onSummary(){ out(await call('GET','/summary')); }
+    async function onSessions(){ const n=parseInt(document.getElementById('limit').value||'200'); out(await call('GET',`/sessions/today?limit=${n}`)); }
+    async function onStress(){ const d=parseInt(document.getElementById('days').value||'7'); out(await call('GET',`/stress?days=${d}`)); }
+    function out(v){ const el=document.getElementById('out'); el.textContent=(typeof v==='string')?v:JSON.stringify(v,null,2); }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <div class="max-w-4xl mx-auto p-6">
+    <h1 class="text-2xl font-bold mb-4">Performance Meter (Standalone UI)</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="bg-white shadow rounded p-4 space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-sm">Role<input id="role" class="mt-1 w-full border rounded px-2 py-1" value="coder"/></label>
+          <label class="text-sm">Flush sec<input id="flush" class="mt-1 w-full border rounded px-2 py-1" value="60"/></label>
+          <label class="text-sm col-span-2">Rules path<input id="rules" class="mt-1 w-full border rounded px-2 py-1" value="rules.txt"/></label>
+          <label class="text-sm col-span-2">Profiles path<input id="profiles" class="mt-1 w-full border rounded px-2 py-1" value="profiles.yaml"/></label>
+          <label class="text-sm col-span-2">Data dir<input id="data_dir" class="mt-1 w-full border rounded px-2 py-1" value="data"/></label>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="px-3 py-1 rounded bg-green-600 text-white" onclick="onStart()">Start</button>
+          <button class="px-3 py-1 rounded bg-blue-600 text-white" onclick="onFlush()">Flush</button>
+          <button class="px-3 py-1 rounded bg-red-600 text-white" onclick="onStop()">Stop</button>
+        </div>
+      </div>
+      <div class="bg-white shadow rounded p-4 space-y-3">
+        <div class="flex gap-2 items-end">
+          <button class="px-3 py-1 rounded bg-slate-700 text-white" onclick="onStatus()">Status</button>
+          <button class="px-3 py-1 rounded bg-slate-700 text-white" onclick="onSummary()">Summary</button>
+        </div>
+        <div class="flex gap-2 items-end">
+          <label class="text-sm">Limit<input id="limit" class="mt-1 w-24 border rounded px-2 py-1" value="200"/></label>
+          <button class="px-3 py-1 rounded bg-slate-700 text-white" onclick="onSessions()">Sessions Today</button>
+        </div>
+        <div class="flex gap-2 items-end">
+          <label class="text-sm">Days<input id="days" class="mt-1 w-24 border rounded px-2 py-1" value="7"/></label>
+          <button class="px-3 py-1 rounded bg-purple-700 text-white" onclick="onStress()">Stress (Gemini)</button>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white shadow rounded p-4">
+      <div class="text-sm text-slate-500 mb-2">Output</div>
+      <pre id="out" class="text-xs"></pre>
+      <div class="text-xs text-slate-500 mt-2">Note: Opening this file directly (file://) calls http://127.0.0.1:8766 and may be blocked by CORS if the API is not same-origin. Prefer using the built-in UI at /ui served by the API.</div>
+    </div>
+  </div>
+</body>
+</html>

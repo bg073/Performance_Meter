@@ -1,0 +1,41 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python caches and artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.coverage*
+htmlcov/
+coverage.xml
+build/
+dist/
+
+# IDE/editor
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Environment and logs
+.env
+*.log
+
+# Local app data outputs (safe to regenerate)
+data/*.jsonl
+data/current-session.json
+data/job_portal/*
+
+# Node
+node_modules/
+
+# Archives
+*.zip
